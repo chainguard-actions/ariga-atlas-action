@@ -1,0 +1,37 @@
+{
+	"name": "Go",
+	"image": "mcr.microsoft.com/devcontainers/base:2-debian",
+	"features": {
+		"ghcr.io/devcontainers/features/node:2": {
+			"version": "24.14.1",
+			"npmVersion": "11.11.0"
+		},
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "1.26.10",
+			"golangciLintVersion": "2.10.1"
+		},
+		"ghcr.io/devcontainers/features/copilot-cli:1": {
+			"version": "latest"
+		},
+		"ghcr.io/ariga/atlas/cli:1": {}
+	},
+	"mounts": [
+		{
+			"type": "volume",
+			"source": "go-mod-cache",
+			"target": "/go/pkg/mod"
+		},
+		{
+			"type": "volume",
+			"source": "${localWorkspaceFolderBasename}-worktrees",
+			"target": "/workspaces/${localWorkspaceFolderBasename}.worktrees"
+		}
+	],
+	"postCreateCommand": {
+		"go-mod-owner": "sudo chown -R $(id -u):$(id -g) /go/pkg",
+		"workspaces": "sudo chown -R $(id -u):$(id -g) /workspaces/${localWorkspaceFolderBasename}.worktrees"
+	},
+	"postStartCommand": {
+		"install-goimports": "go install golang.org/x/tools/cmd/goimports@v0.45.0"
+	}
+}
