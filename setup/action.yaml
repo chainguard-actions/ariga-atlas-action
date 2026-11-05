@@ -1,0 +1,66 @@
+name: "Setup Atlas Action"
+description: "Build and run the atlas-action"
+inputs:
+  token:
+    description: "The GitHub token"
+    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - id: cache-meta
+      run: |
+        safe_ref=$(printf '%s' "$ACTION_REF" | tr -d '\n\r')
+        safe_os=$(printf '%s' "$RUNNER_OS" | tr -d '\n\r')
+        echo "key=${safe_os}-atlas-action-${safe_ref}" >> "$GITHUB_OUTPUT"
+        safe_home=$(printf '%s' "$HOME" | tr -d '\n\r')
+        echo "path=${safe_home}/atlas-action" >> "$GITHUB_OUTPUT"
+      shell: bash
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      id: cache
+      with:
+        key: ${{ steps.cache-meta.outputs.key }}
+        path: ${{ steps.cache-meta.outputs.path }}
+    - if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      with:
+        go-version-file: ${{ github.action_path }}/../go.mod
+        cache: false
+        token: ${{ inputs.token }}
+    - if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      run: make -C .. install COMMIT="$(printf '%s' "$ACTION_REF" | cut -c1-7)"
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+        GOBIN: ${{ steps.cache-meta.outputs.path }}
+    - run: |
+        # Add the binary path to the PATH
+        safe_path=$(printf '%s' "$ATLAS_BIN_PATH" | tr -d '\n\r')
+        echo "$safe_path" >> "$GITHUB_PATH"
+        # This ENV tell the shimjs to use the local binary instead of downloading it
+        echo "ATLAS_ACTION_LOCAL=1" >> "$GITHUB_ENV"
+      shell: bash
+      env:
+        ATLAS_BIN_PATH: ${{ steps.cache-meta.outputs.path }}
+    - run: atlas-action --version
+      shell: bash

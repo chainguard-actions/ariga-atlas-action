@@ -1,0 +1,54 @@
+name: Test basic setup
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # atlas-action looks up the `atlas` CLI on PATH at startup (even for
+      # --version). The real CLI is installed by ariga/setup-atlas, which is not
+      # part of this action, so provide a stub `atlas` on PATH.
+      - name: Provide stub atlas CLI on PATH
+        run: |
+          mkdir -p "$HOME/fake-atlas-bin"
+          cat > "$HOME/fake-atlas-bin/atlas" <<'EOF'
+          #!/bin/sh
+          echo "atlas version v0.30.0"
+          exit 0
+          EOF
+          chmod +x "$HOME/fake-atlas-bin/atlas"
+          echo "$HOME/fake-atlas-bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+      - name: Assert atlas-action installed on PATH
+        run: |
+          echo "PATH: $PATH"
+          if ! command -v atlas-action >/dev/null 2>&1; then
+            echo "FAIL: atlas-action not found on PATH"
+            exit 1
+          fi
+          echo "found: $(command -v atlas-action)"
+          VERSION="$(atlas-action --version 2>&1)"
+          echo "version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: empty version output"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert binary is in $HOME/atlas-action
+        run: |
+          if [ ! -x "$HOME/atlas-action/atlas-action" ]; then
+            echo "FAIL: $HOME/atlas-action/atlas-action not found or not executable"
+            ls -la "$HOME/atlas-action" || true
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert ATLAS_ACTION_LOCAL is set
+        run: |
+          echo "ATLAS_ACTION_LOCAL=$ATLAS_ACTION_LOCAL"
+          if [ "$ATLAS_ACTION_LOCAL" != "1" ]; then
+            echo "FAIL: expected ATLAS_ACTION_LOCAL=1"
+            exit 1
+          fi
+          echo "PASS"
