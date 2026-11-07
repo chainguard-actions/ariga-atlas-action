@@ -16,7 +16,15 @@ Action **ariga--atlas-action--setup/v1.17.12** was hardened automatically. 5 fin
 
 ### script-injection (severity: high)
 
-(a) Step 'cache-meta' puts an expression straight into the run script: `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`. Use $RUNNER_OS instead.
+Rule (a): an expression is written straight into a run: script in step 'cache-meta': `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`. Pass runner.os in through env, or use $RUNNER_OS, instead.
+
+Locations:
+
+- `action.yaml:13`
+
+### github-env-injection (severity: high)
+
+Step 'cache-meta' writes ACTION_REF (from github.action_ref) and runner.os to $GITHUB_OUTPUT with no `printf '%s' ... | tr -d '\n\r'` cleanup first: `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`.
 
 Locations:
 
@@ -24,7 +32,7 @@ Locations:
 
 ### script-injection (severity: high)
 
-(b) In the build step, an env var from github.action_ref is expanded without quotes inside command substitution: `make -C .. install COMMIT=$(echo $ACTION_REF | cut -c1-7)`. Quote it as "$ACTION_REF" and quote the whole COMMIT value.
+Rule (b): ACTION_REF holds github.action_ref, which the caller controls, and the shell expands it without quotes: `run: make -C .. install COMMIT=$(echo $ACTION_REF | cut -c1-7)`. Quote it as "$ACTION_REF".
 
 Locations:
 
@@ -32,28 +40,19 @@ Locations:
 
 ### script-injection (severity: high)
 
-(a) The PATH step puts an expression straight into the run script: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`. Pass it through an env: variable and quote it.
+Rule (a): an expression is written straight into a run: script: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`. Pass it in through an env: variable and quote it.
 
 Locations:
 
-- `action.yaml:38`
+- `action.yaml:37`
 
 ### github-env-injection (severity: high)
 
-Step 'cache-meta' writes untrusted values to $GITHUB_OUTPUT without the `printf '%s' ... | tr -d '\n\r'` sanitization: ACTION_REF (from github.action_ref) and runner.os on line 13, and the inherited $HOME on line 14.
+A step output, steps.cache-meta.outputs.path, is written to $GITHUB_PATH with no `printf '%s' ... | tr -d '\n\r'` cleanup first: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`.
 
 Locations:
 
-- `action.yaml:13`
-- `action.yaml:14`
-
-### github-env-injection (severity: high)
-
-The PATH step writes steps.cache-meta.outputs.path to $GITHUB_PATH without sanitization: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`.
-
-Locations:
-
-- `action.yaml:38`
+- `action.yaml:37`
 
 ## Iteration Notes
 
@@ -63,13 +62,18 @@ Locations:
 
 **Notes:**
 
-cache-meta step: now uses $RUNNER_OS instead of ${{ runner.os }}, and the key and path values are cleaned with printf | tr -d '\n\r' before they are written to GITHUB_OUTPUT. Build step: ACTION_REF is now quoted and the whole COMMIT value is quoted. PATH step: the steps.cache-meta.outputs.path value now comes in through the env var ATLAS_BIN_PATH, and newlines are stripped before it is written to GITHUB_PATH.
+Changes in action.yaml:
+- Step 'cache-meta': runner.os now comes in through an env variable instead of being written into the script. The OS name, ACTION_REF and HOME each go through printf '%s' | tr -d '\n\r' before being written to GITHUB_OUTPUT.
+- Make step: ACTION_REF is now quoted. The command is now COMMIT="$(printf '%s' "$ACTION_REF" | cut -c1-7)".
+- PATH step: steps.cache-meta.outputs.path now comes in through the BIN_PATH env variable and has its newlines removed before it is added to GITHUB_PATH.
+
+I kept github.action_ref even though it names the mirror's ref rather than upstream's, because here it only feeds the cache key and the COMMIT label for a local build. Nothing is downloaded from upstream with it.
 
 ### Iteration 2
 
-**Fixes applied:** github-env-injection, invalid-yaml
+**Fixes applied:** script-injection, github-env-injection
 
 **Notes:**
 
-In action.yaml, the line that cleans the PATH value was stuck onto the end of a comment, so it never ran. I put `safe_bin_path=$(printf '%s' "$ATLAS_BIN_PATH" | tr -d '\n\r')` back on its own line, so the value has newlines removed before it goes into $GITHUB_PATH. I also took `shell: bash` off the end of the ATLAS_BIN_PATH env line. That leftover text was what broke the YAML. Nothing else in the file changed. The first targeted edit said it succeeded but didn't stick, so I rewrote the whole file with the same content apart from these two fixes. A search afterwards confirmed both problems are gone.
+Moved steps.cache-meta.outputs.path into env CACHE_PATH in the PATH-update step; sanitized with printf | tr -d '\n\r' before writing to $GITHUB_PATH.
 
