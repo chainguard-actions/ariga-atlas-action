@@ -27,14 +27,14 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - id: cache-meta
       run: |
-        safe_key=$(printf '%s' "$RUNNER_OS_NAME-atlas-action-$ACTION_REF" | tr -d '\n\r')
-        safe_path=$(printf '%s' "$HOME/atlas-action" | tr -d '\n\r')
-        echo "key=$safe_key" >> "$GITHUB_OUTPUT"
-        echo "path=$safe_path" >> "$GITHUB_OUTPUT"
+        safe_os=$(printf '%s' "$RUNNER_OS" | tr -d '\n\r')
+        safe_ref=$(printf '%s' "$ACTION_REF" | tr -d '\n\r')
+        safe_home=$(printf '%s' "$HOME" | tr -d '\n\r')
+        echo "key=${safe_os}-atlas-action-${safe_ref}" >> "$GITHUB_OUTPUT"
+        echo "path=${safe_home}/atlas-action" >> "$GITHUB_OUTPUT"
       shell: bash
       env:
         ACTION_REF: ${{ 'v1.17.13' }}
-        RUNNER_OS_NAME: ${{ runner.os }}
     - uses: chainguard-actions/actions-cache@ed9cd5fd01ce2aa7cee30b08049c67b74bf1e8c7 # v5.0.4
       id: cache
       with:
@@ -54,12 +54,13 @@ runs:
         ACTION_REF: ${{ 'v1.17.13' }}
         GOBIN: ${{ steps.cache-meta.outputs.path }}
     - run: |
-        safe_bin_path=$(printf '%s' "$BIN_PATH" | tr -d '\n\r')
-        echo "$safe_bin_path" >> "$GITHUB_PATH"
+        # Add the binary path to the PATH
+        safe_path=$(printf '%s' "$ATLAS_BIN_PATH" | tr -d '\n\r')
+        echo "$safe_path" >> "$GITHUB_PATH"
         # This ENV tell the shimjs to use the local binary instead of downloading it
         echo "ATLAS_ACTION_LOCAL=1" >> "$GITHUB_ENV"
       shell: bash
       env:
-        BIN_PATH: ${{ steps.cache-meta.outputs.path }}
+        ATLAS_BIN_PATH: ${{ steps.cache-meta.outputs.path }}
     - run: atlas-action --version
       shell: bash
