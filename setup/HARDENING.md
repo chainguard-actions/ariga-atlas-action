@@ -16,23 +16,32 @@ Action **ariga--atlas-action--setup/v1.17.13** was hardened automatically. 5 fin
 
 ### script-injection (severity: high)
 
-(a) A ${{ }} expression is placed directly inside the run script of the cache-meta step: `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`. Use $RUNNER_OS instead.
+Sub-rule (a), step cache-meta: the run block puts a template expression straight into the shell command: `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`. Use the $RUNNER_OS env var instead.
 
 Locations:
 
 - `action.yaml:13`
 
-### script-injection (severity: high)
+### github-env-injection (severity: high)
 
-(b) In the install step, the env var ACTION_REF holds github.action_ref and is expanded without quotes: `make -C .. install COMMIT=$(echo $ACTION_REF | cut -c1-7)`. It should be quoted: "$ACTION_REF".
+Step cache-meta writes ACTION_REF (set from github.action_ref) to $GITHUB_OUTPUT without running `printf '%s' ... | tr -d '\n\r'` first: `echo "key=${{ runner.os }}-atlas-action-$ACTION_REF" >> "$GITHUB_OUTPUT"`. On the next line it writes the inherited $HOME without sanitising it either: `echo "path=$HOME/atlas-action" >> "$GITHUB_OUTPUT"`.
 
 Locations:
 
-- `action.yaml:30`
+- `action.yaml:13`
+- `action.yaml:14`
 
 ### script-injection (severity: high)
 
-(a) A ${{ }} expression is placed directly inside the run script: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`. Pass the value in through an env var instead.
+Sub-rule (b), make install step: the env var ACTION_REF (from github.action_ref) is expanded without quotes: `make -C .. install COMMIT=$(echo $ACTION_REF | cut -c1-7)`. Quote it as "$ACTION_REF" and quote the command substitution too.
+
+Locations:
+
+- `action.yaml:31`
+
+### script-injection (severity: high)
+
+Sub-rule (a), PATH setup step: the run block puts a template expression straight into the shell command: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`. Pass the value through an env: variable and quote it where the shell expands it.
 
 Locations:
 
@@ -40,15 +49,7 @@ Locations:
 
 ### github-env-injection (severity: high)
 
-The cache-meta step writes ACTION_REF (from github.action_ref) and runner.os to $GITHUB_OUTPUT without first running printf '%s' ... | tr -d '\n\r'. It also writes $HOME, an inherited env var, to $GITHUB_OUTPUT without sanitizing it.
-
-Locations:
-
-- `action.yaml:13`
-
-### github-env-injection (severity: high)
-
-steps.cache-meta.outputs.path is written to $GITHUB_PATH without printf '%s' ... | tr -d '\n\r' sanitization: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`.
+PATH setup step writes steps.cache-meta.outputs.path to $GITHUB_PATH without running `printf '%s' ... | tr -d '\n\r'` first: `echo "${{ steps.cache-meta.outputs.path }}" >> "$GITHUB_PATH"`.
 
 Locations:
 
@@ -62,5 +63,5 @@ Locations:
 
 **Notes:**
 
-Changes in action.yaml: in the cache-meta step, `${{ runner.os }}` is now `$RUNNER_OS`. RUNNER_OS, ACTION_REF and HOME each go through `printf '%s' | tr -d '\n\r'` before being written to GITHUB_OUTPUT. In the install step, ACTION_REF is now quoted: `COMMIT="$(printf '%s' "$ACTION_REF" | cut -c1-7)"`. The PATH step now takes steps.cache-meta.outputs.path through an env var (ATLAS_BIN_PATH) and strips newlines from it before writing to GITHUB_PATH. github.action_ref is only used for the cache key and the build's COMMIT label, not to download anything from upstream, so I didn't swap it for upstream_ref. Nothing was run to test these changes.
+cache-meta: uses $RUNNER_OS instead of ${{ runner.os }}; key/path sanitized with printf|tr -d '\n\r' before writing to GITHUB_OUTPUT. make install: COMMIT now derived from the upstream commit (ACTION_COMMIT env = fc91f650...) cut to 7 chars, fully quoted, since the mirror's action_ref would stamp a wrong value; ACTION_REF kept for cache key. PATH step: steps.cache-meta.outputs.path moved to env ATLAS_BIN_PATH, sanitized before writing to GITHUB_PATH.
 
