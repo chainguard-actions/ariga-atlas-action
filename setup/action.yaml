@@ -34,13 +34,13 @@ runs:
       shell: bash
       env:
         ACTION_REF: ${{ 'v1.18.0' }}
-    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    - uses: chainguard-actions/actions-cache@ed9cd5fd01ce2aa7cee30b08049c67b74bf1e8c7 # v5.0.4
       id: cache
       with:
         key: ${{ steps.cache-meta.outputs.key }}
         path: ${{ steps.cache-meta.outputs.path }}
     - if: ${{ steps.cache.outputs.cache-hit != 'true' }}
-      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      uses: chainguard-actions/actions-setup-go@a814b26a1f725396d458daeda6444b79f28328d6 # v6.3.0
       with:
         go-version-file: ${{ github.action_path }}/../go.mod
         cache: false
