@@ -1,0 +1,42 @@
+name: Test setup with empty token
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # atlas-action requires the `atlas` CLI on PATH at startup (even for --version).
+      - name: Provide stub atlas CLI on PATH
+        run: |
+          mkdir -p "$RUNNER_TEMP/atlas-stub"
+          cat > "$RUNNER_TEMP/atlas-stub/atlas" <<'EOF'
+          #!/bin/sh
+          echo "atlas version v0.30.0"
+          exit 0
+          EOF
+          chmod +x "$RUNNER_TEMP/atlas-stub/atlas"
+          echo "$RUNNER_TEMP/atlas-stub" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          token: ""
+      - name: Assert step succeeded and binary works
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          if ! command -v atlas-action >/dev/null 2>&1; then
+            echo "FAIL: atlas-action not on PATH"
+            exit 1
+          fi
+          atlas-action --version || { echo "FAIL: --version failed"; exit 1; }
+          if [ "$ATLAS_ACTION_LOCAL" != "1" ]; then
+            echo "FAIL: ATLAS_ACTION_LOCAL not set to 1 (got '$ATLAS_ACTION_LOCAL')"
+            exit 1
+          fi
+          echo "PASS"

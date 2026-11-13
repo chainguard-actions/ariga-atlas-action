@@ -1,0 +1,98 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "9f96e670-85cc-4764-b83f-9824a9747edd",
+  "author": "ariga",
+  "name": "AtlasAction",
+  "friendlyName": "Atlas Action",
+  "description": "Atlas Action for Azure DevOps",
+  "helpMarkDown": "",
+  "category": "Azure Pipelines",
+  "version": {
+    "Major": 0,
+    "Minor": 0,
+    "Patch": 0
+  },
+  "execution": {
+    "Node": {
+      "target": "shim.js",
+      "argumentFormat": ""
+    },
+    "Node10": {
+      "target": "shim.js",
+      "argumentFormat": ""
+    },
+    "Node16": {
+      "target": "shim.js",
+      "argumentFormat": ""
+    },
+    "Node20_1": {
+      "target": "shim.js",
+      "argumentFormat": ""
+    }
+  },
+  "postjobexecution": {
+    "Node16": {
+      "target": "post-shim.js",
+      "argumentFormat": ""
+    },
+    "Node20_1": {
+      "target": "post-shim.js",
+      "argumentFormat": ""
+    }
+  },
+  "instanceNameFormat": "Atlas Action: $(action)",
+  "inputs": [
+    {
+      "type": "pickList",
+      "label": "Action",
+      "helpMarkDown": "Select an action to use at this job.",
+      "required": true,
+      "name": "action",
+      "options": {{ .AsSetupOptions | jsonIndent "      " "  " }}
+    },
+    {
+      "type": "string",
+      "label": "Atlas version",
+      "helpMarkDown": "The version of Atlas CLI to install, e.g. `v1.2.0`. Defaults to `latest`.",
+      "name": "atlas_version",
+      "defaultValue": "latest",
+      "visibleRule": "action == setup"
+    },
+    {
+      "type": "string",
+        "label": "Atlas flavor",
+        "helpMarkDown": "The flavor of Atlas CLI to install, e.g. `spanner`.",
+      "name": "flavor",
+      "defaultValue": "",
+      "visibleRule": "action == setup"
+    },
+    {{- $lenActions := len .Actions -}}
+    {{- range $name, $input := .AzureInputs }}
+    {
+      "type": "{{ $input.AzureInputType }}",
+      {{- if $input.Options }}
+      "options": {
+        {{ range $i, $v := $input.Options -}}
+        {{- if not (eq $i 0) }},{{ end }}{{ $v | printf "%q" }}:{{ $v | printf "%q" -}}
+        {{- end }}
+      },
+      {{- end }}
+      "label": "{{ $input.Label }}",
+      "helpMarkDown": {{ $input.Description | json }},
+      "name": "{{ $name | replace "-" "_" }}",
+      {{- if eq $name "cloud-token" }}
+      "visibleRule": "action == setup || {{ $input.VisibleRule }}"
+      {{- else }}
+      "visibleRule": {{ $input.VisibleRule | json }}
+      {{- end }}
+    },
+    {{- end }}
+    {
+      "name": "githubConnection",
+      "type": "connectedService:github:OAuth,PersonalAccessToken,InstallationToken,Token",
+      "label": "GitHub connection (OAuth or PAT)",
+      "defaultValue": "",
+      "helpMarkDown": "Specify the name of the GitHub service connection to use to connect to the GitHub repository. The connection must be based on a GitHub user's OAuth or a GitHub personal access token. Learn more about service connections [here](https://aka.ms/AA3am5s)."
+    }
+  ]
+}

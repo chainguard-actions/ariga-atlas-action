@@ -1,0 +1,24 @@
+<code>atlas migrate lint</code> on <strong>{{ if eq .Env.Dir "." }}working directory{{ else }}{{ .Env.Dir }}{{ end }}</strong>
+<table>
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Step</th>
+      <th>Result</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><div align="center">{{- template "lint-check" "success.svg" -}}</div></td>
+      <td>{{- filesDetected .Files -}}</td>
+      <td>
+        {{- with .Files -}}
+          {{- join (fileNames .) "<br/>" -}}
+        {{- else -}}
+          &nbsp;
+        {{- end -}}
+      </td>
+    </tr>
+{{- template "lint-report" . }}
+  </tbody>
+</table>
