@@ -1,0 +1,42 @@
+{
+  "name": "shimjs",
+  "version": "0.1.1",
+  "description": "the shim logic to download the action binary",
+  "main": "dist/index.js",
+  "scripts": {
+    "format": "prettier --write *.js",
+    "format-check": "prettier --check *.js",
+    "lint": "tsc --noEmit --allowJs --checkJs --module node18 --strict false *.js",
+    "all": "npm run format && npm run lint && npm run shim",
+    "shim": "npm run shim:actions && npm run shim:azure && npm run shim:azure-post",
+    "shim:actions": "ncc build actions.js -o dist/actions",
+    "shim:azure": "ncc build azure.js -o dist/azure",
+    "shim:azure-post": "ncc build azure-post.js -o dist/azure-post"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ariga/atlas-action.git"
+  },
+  "keywords": [
+    "atlas",
+    "atlasci",
+    "github",
+    "action"
+  ],
+  "author": "ariga",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ariga/atlas/issues"
+  },
+  "homepage": "https://github.com/ariga/atlas#readme",
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@vercel/ncc": "0.38.4",
+    "prettier": "2.6.2",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "@actions/core": "1.11.1",
+    "@actions/tool-cache": "2.0.2"
+  }
+}

@@ -1,0 +1,39 @@
+name: Test setup with empty token
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Provide a stub atlas CLI on PATH (atlas-action requires it to exist)
+        run: |
+          mkdir -p "$HOME/fake-atlas-bin"
+          cat > "$HOME/fake-atlas-bin/atlas" <<'EOF'
+          #!/bin/sh
+          echo "atlas version v0.30.0"
+          exit 0
+          EOF
+          chmod +x "$HOME/fake-atlas-bin/atlas"
+          echo "$HOME/fake-atlas-bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          token: ""
+      - name: Assert atlas-action works without explicit token
+        run: |
+          if ! command -v atlas-action >/dev/null 2>&1; then
+            echo "FAIL: atlas-action not on PATH"
+            exit 1
+          fi
+          OUT="$(atlas-action --version 2>&1)"
+          echo "version output: $OUT"
+          if [ -z "$OUT" ]; then
+            echo "FAIL: empty --version output"
+            exit 1
+          fi
+          if [ "$ATLAS_ACTION_LOCAL" != "1" ]; then
+            echo "FAIL: expected ATLAS_ACTION_LOCAL=1, got '$ATLAS_ACTION_LOCAL'"
+            exit 1
+          fi
+          echo "PASS"
