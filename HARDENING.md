@@ -6,4 +6,5 @@
 
 The actions in this repository were hardened individually, and each has its own report:
 
+- [`create-repo`](create-repo/HARDENING.md)
 - [`setup`](setup/HARDENING.md)
