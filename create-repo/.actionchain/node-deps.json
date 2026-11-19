@@ -1,0 +1,13 @@
+{
+  "status": "unbundlable",
+  "entries": [
+    {
+      "shared_files": [
+        "shim/dist/actions/index.js"
+      ],
+      "path": "index.js",
+      "status": "unbundlable",
+      "reason": "entry imports shared code from outside the action root that needs no node_modules"
+    }
+  ]
+}
