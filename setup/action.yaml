@@ -27,15 +27,14 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - id: cache-meta
       run: |
-        safe_os=$(printf '%s' "$RUNNER_OS_NAME" | tr -d '\n\r')
+        safe_os=$(printf '%s' "$RUNNER_OS" | tr -d '\n\r')
         safe_ref=$(printf '%s' "$ACTION_REF" | tr -d '\n\r')
-        echo "key=${safe_os}-atlas-action-${safe_ref}" >> "$GITHUB_OUTPUT"
         safe_home=$(printf '%s' "$HOME" | tr -d '\n\r')
+        echo "key=${safe_os}-atlas-action-${safe_ref}" >> "$GITHUB_OUTPUT"
         echo "path=${safe_home}/atlas-action" >> "$GITHUB_OUTPUT"
       shell: bash
       env:
         ACTION_REF: ${{ 'v1.17.12' }}
-        RUNNER_OS_NAME: ${{ runner.os }}
     - uses: chainguard-actions/actions-cache@ed9cd5fd01ce2aa7cee30b08049c67b74bf1e8c7 # v5.0.4
       id: cache
       with:
