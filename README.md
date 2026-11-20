@@ -8,11 +8,11 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
-| v1.17.12 | [`v1.17.12`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.17.12) | [`be526fa`](https://github.com/ariga/atlas-action/commit/be526fa360e6cb745546681470f4760dbbc49cf8) | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.12/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.12/setup/HARDENING.md) |
+| v1.17.12 | [`v1.17.12`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.17.12) | — | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.12/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.12/setup/HARDENING.md) |
 | v1.17.13 | [`v1.17.13`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.17.13) | — | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.13/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.17.13/setup/HARDENING.md) |
 | v1.18.0 | [`v1.18.0`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.18.0) | — | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.0/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.0/setup/HARDENING.md) |
 | v1.18.1 | [`v1.18.1`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.18.1) | — | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.1/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.1/setup/HARDENING.md) |
-| v1.18.2 | [`v1.18.2`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.18.2) | — | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.2/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.2/setup/HARDENING.md) |
+| v1.18.2 | [`v1.18.2`](https://github.com/chainguard-actions/ariga-atlas-action/tree/v1.18.2) | [`c67b7be`](https://github.com/ariga/atlas-action/commit/c67b7be66d4e00c1181918f4755fb18b34369322) | [`create-repo`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.2/create-repo/HARDENING.md), [`setup`](https://github.com/chainguard-actions/ariga-atlas-action/blob/v1.18.2/setup/HARDENING.md) |
 
 ## Privacy
 
