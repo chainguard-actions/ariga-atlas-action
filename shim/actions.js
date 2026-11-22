@@ -1,0 +1,76 @@
+// Copyright 2021-present The Atlas Authors. All rights reserved.
+// This source code is licensed under the Apache 2.0 license found
+// in the LICENSE file in the root directory of this source tree.
+
+const childProcess = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const core = require("@actions/core");
+const toolCache = require("@actions/tool-cache");
+
+module.exports = async function run(action) {
+  const binaryName = "atlas-action";
+  // Check for local mode (for testing)
+  if (process.env.ATLAS_ACTION_LOCAL === "1") {
+    // In the local mode, the atlas-action binary is expected to be in the PATH
+    core.info("Running in local mode");
+  } else {
+    // Download the binary if not in local mode
+    const version = process.env.GITHUB_ACTION_REF || "master";
+    const isCommitSHA = /^[0-9a-f]{40}$/i.test(version);
+    if (!isCommitSHA && !version.startsWith("v") && version !== "master") {
+      throw new Error(
+        `Invalid version: ${version}. ` +
+          `If you are pinning by commit SHA, please use the full 40-character hash. ` +
+          `Alternatively, add a step to build the binary using ariga/atlas-action/setup.`
+      );
+    }
+    core.info(`Using version ${version}`);
+    const toolName = "atlas-action";
+    // We only cache the binary between steps of a single run.
+    const cacheVersion = `${version}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
+    let toolPath = toolCache.find(toolName, cacheVersion);
+    // Tool Path is the directory where the binary is located. If it is not found, download it.
+    if (!toolPath || !fs.existsSync(path.join(toolPath, binaryName))) {
+      const primaryUrl = `https://atlasbinaries.com/atlas-action/atlas-action-${version}`;
+      const fallbackUrl = `https://release.ariga.io/atlas-action/atlas-action-${version}`;
+      const dest = path.join(process.cwd(), "atlas-action");
+      // The action can be run in the same job multiple times.
+      // And the cache is only updated after the job is done.
+      if (fs.existsSync(dest)) {
+        core.debug(`Using downloaded binary: ${dest}`);
+      } else {
+        core.info(`Downloading atlas-action binary: ${primaryUrl} to ${dest}`);
+        try {
+          await toolCache.downloadTool(primaryUrl, dest);
+        } catch (err) {
+          core.warning(`Primary server failed (${err.message}), falling back to release.ariga.io`);
+          core.info(`Downloading atlas-action binary: ${fallbackUrl} to ${dest}`);
+          try {
+            await toolCache.downloadTool(fallbackUrl, dest);
+          } catch (err2) {
+            throw new Error(
+              `Failed to download atlas-action binary from all sources.\n` +
+                `If you are pinning the action by commit SHA, the binary for this commit may not be available.\n` +
+                `To fix this, add a setup step before running atlas-action:\n\n` +
+                `  - uses: ariga/atlas-action/setup@${version}\n\n` +
+                `This will build the atlas-action binary directly in your CI environment.`
+            );
+          }
+        }
+        fs.chmodSync(dest, "700");
+      }
+      toolPath = await toolCache.cacheFile(dest, binaryName, toolName, cacheVersion);
+    }
+    core.addPath(toolPath);
+  }
+  const { status, error } = childProcess.spawnSync(binaryName, ["--action", action], {
+    stdio: "inherit"
+  });
+  if (status !== 0 || error) {
+    core.error(error);
+    core.setFailed(`The process exited with code ${status}`);
+    // Always exit with an error code to fail the action
+    process.exit(status || 1);
+  }
+};

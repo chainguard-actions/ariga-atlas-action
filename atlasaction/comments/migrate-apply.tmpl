@@ -1,0 +1,75 @@
+{{- block "migrate-header" . -}}
+<h2>
+{{- if .Error -}}
+{{- assetsImage "error.svg" | image "22px" }} Migration Failed
+{{- else -}}
+{{- assetsImage "success.svg" | image "22px" }} Migration Passed
+{{- end -}}
+</h2>
+{{- end -}}
+<h4><code>atlas migrate apply</code> Summary:</h4>
+<table>
+  <tr>
+    <th>Parameter</th>
+    <th>Details</th>
+  </tr>
+  <tr>
+    <td>Migration Directory</td>
+    <td><code>{{ .Dir }}</code></td>
+  </tr>
+  <tr>
+    <td>Database URL</td>
+    <td><code>{{ .URL.URL }}</code></td>
+  </tr>
+  {{- with .Current }}
+  <tr>
+    <td>Migrate from Version</td>
+    <td><code>{{ . }}</code></td>
+  </tr>
+  {{- end }}
+  <tr>
+    <td>Migrate to Version</td>
+    <td>
+      <code>{{- or .Target .Current -}}</code>
+    </td>
+  </tr>
+  <tr>
+    <td>SQL Summary</td>
+    <td>
+      {{- len .Applied }} migration file{{- if or (not .Applied) (gt (len .Applied) 1) }}s{{- end -}}
+      {{- with (appliedStmts .) -}}
+      , {{ . }} statement{{- if gt . 1 }}s{{- end }} passed
+      {{- end -}}
+      {{- if .Error -}}, 1 failed{{- end -}}
+    </td>
+  </tr>
+  <tr>
+    <td>Total Time</td>
+    <td>{{ execTime .Start .End }}</td>
+  </tr>
+</table>
+{{- range .Applied -}}
+{{- block "applied-file" . -}}
+<h4>Version {{ .Name }}:</h4>
+<table>
+  <tr>
+    <th>Status</th>
+    <th>Executed Statements</th>
+    <th>Execution Time</th>
+    <th>Error</th>
+    <th>Error Statement</th>
+  </tr>
+  <tr>
+    <td><div align="center">{{- template "lint-check" (or (and .Error "error.svg") "success.svg") -}}</div></td>
+    <td>{{ len .Applied }}</td>
+    <td>{{ execTime .Start .End }}</td>
+{{- with .Error -}}
+    <td>{{- .Text -}}</td><td>{{- .Stmt | codeblock "sql" | details "📄 View" -}}</td>
+{{- else -}}
+    <td>-</td><td>-</td>
+{{- end -}}
+  </tr>
+</table>
+{{- end -}}
+{{- join .Applied "\n" | codeblock "sql" | details "📄 View SQL Statements" -}}
+{{- end -}}

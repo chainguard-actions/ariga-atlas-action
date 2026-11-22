@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "https://github.com/ariga/atlas-action/blob/master/schema.json",
+  "title": "atlas-action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "actions"
+  ],
+  "properties": {
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/action"
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Place for put common inputs that share with all actions",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/definitions/input"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "action": {
+      "type": "object",
+      "description": "An Atlas Action",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/input"
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/output"
+          }
+        }
+      }
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "boolean",
+        "string",
+        "number"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label",
+        "description"
+      ],
+      "properties": {
+        "type": {
+          "description": "Type of the input",
+          "$ref": "#/definitions/type"
+        },
+        "multiLine": {
+          "description": "Some input accept list of string separated by newline",
+          "type": "boolean"
+        },
+        "default": {
+          "description": "Default value of the input",
+          "type": [
+            "string",
+            "boolean",
+            "number"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required": {
+          "description": "Is this input required?",
+          "type": "boolean"
+        },
+        "label": {
+          "description": "Label for place that show the input as textbox",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of the input",
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "string" } }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string" }
+              },
+              "default": { "type": "string" }
+            }
+          },
+          "else": {
+            "not": {
+              "required": ["options"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "boolean" } }
+          },
+          "then": {
+            "properties": {
+              "default": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "number" } }
+          },
+          "then": {
+            "properties": {
+              "default": { "type": "number" }
+            }
+          }
+        }
+      ]
+    },
+    "output": {
+      "type": "object",
+      "required": [
+        "description"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
